@@ -1,11 +1,15 @@
 """Handles saving/loading zone data to/from disk."""
 
 import json
+import os
 from pathlib import Path
 
 from src.models.city import City
 from src.models.restriction import Restriction
 from src.models.zone import Zone
+
+# Default directory for storing city data
+DEFAULT_DATA_DIR = Path(__file__).parent.parent.parent / 'data' / 'cities'
 
 
 def save_city(city: City, filepath: str | Path) -> None:
@@ -49,50 +53,63 @@ def save_city(city: City, filepath: str | Path) -> None:
         json.dump(city_data, f, indent=2, ensure_ascii=False)
 
 
-def load_city(filepath: str | Path) -> City:
+def load_city(name: str | Path, data_dir: str | Path = DEFAULT_DATA_DIR) -> City | None:
     """Load a city object from a JSON file.
 
     Args:
-        filepath: Path to the JSON file
+        name: Name of the city or path to the JSON file
+        data_dir: Directory containing city data files (if name is a city name)
 
     Returns:
-        City: The loaded city object
+        City: The loaded city object, or None if not found
 
     Raises:
-        FileNotFoundError: If the file doesn't exist
         json.JSONDecodeError: If the file contains invalid JSON
     """
-    filepath = Path(filepath)
+    # Determine the file path
+    if isinstance(name, Path) or (isinstance(name, str) and os.path.isfile(name)):
+        filepath = Path(name)
+    else:
+        # Convert city name to lowercase for filename
+        filename = f'{name.lower()}.json'
+        filepath = Path(data_dir) / filename
+
+    # Check if file exists
+    if not filepath.exists():
+        return None
 
     # Read file
-    with open(filepath, encoding='utf-8') as f:
-        city_data = json.load(f)
+    try:
+        with open(filepath, encoding='utf-8') as f:
+            city_data = json.load(f)
 
-    # Create city object
-    city = City(name=city_data['name'], country=city_data.get('country', 'Italy'))
+        # Create city object
+        city = City(name=city_data['name'], country=city_data.get('country', 'Italy'))
 
-    # Add zones
-    for zone_data in city_data['zones']:
-        zone = Zone(
-            id=zone_data['id'], name=zone_data['name'], city=zone_data['city'], boundaries=zone_data['boundaries']
-        )
-
-        # Add restrictions
-        for restriction_data in zone_data.get('restrictions', []):
-            restriction = Restriction(
-                days=restriction_data['days'],
-                start_time=restriction_data['start_time'],
-                end_time=restriction_data['end_time'],
-                vehicle_types=restriction_data.get('vehicle_types', []),
+        # Add zones
+        for zone_data in city_data['zones']:
+            zone = Zone(
+                id=zone_data['id'], name=zone_data['name'], city=zone_data['city'], boundaries=zone_data['boundaries']
             )
-            zone.add_restriction(restriction)
 
-        city.add_zone(zone)
+            # Add restrictions
+            for restriction_data in zone_data.get('restrictions', []):
+                restriction = Restriction(
+                    days=restriction_data['days'],
+                    start_time=restriction_data['start_time'],
+                    end_time=restriction_data['end_time'],
+                    vehicle_types=restriction_data.get('vehicle_types', []),
+                )
+                zone.add_restriction(restriction)
 
-    return city
+            city.add_zone(zone)
+
+        return city
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        return None
 
 
-def save_all_cities(cities: list[City], data_dir: str | Path) -> None:
+def save_all_cities(cities: list[City], data_dir: str | Path = DEFAULT_DATA_DIR) -> None:
     """Save a list of cities to disk, one file per city.
 
     Args:
@@ -109,7 +126,7 @@ def save_all_cities(cities: list[City], data_dir: str | Path) -> None:
         save_city(city, filepath)
 
 
-def load_all_cities(data_dir: str | Path) -> list[City]:
+def load_all_cities(data_dir: str | Path = DEFAULT_DATA_DIR) -> list[City]:
     """Load all cities from JSON files in a directory.
 
     Args:
@@ -119,7 +136,11 @@ def load_all_cities(data_dir: str | Path) -> list[City]:
         List of City objects
     """
     data_dir = Path(data_dir)
-    cities = []
+    cities: list[City] = []
+
+    # Ensure directory exists
+    if not data_dir.exists():
+        return cities
 
     # Find all JSON files
     json_files = list(data_dir.glob('*.json'))
@@ -127,9 +148,23 @@ def load_all_cities(data_dir: str | Path) -> list[City]:
     for file_path in json_files:
         try:
             city = load_city(file_path)
-            cities.append(city)
+            if city:
+                cities.append(city)
         except (json.JSONDecodeError, KeyError) as e:
             # Log error but continue with other files
             print(f'Error loading {file_path}: {e}')
 
     return cities
+
+
+def get_all_cities(data_dir: str | Path = DEFAULT_DATA_DIR) -> list[dict[str, str]]:
+    """Get a list of all available cities with their country.
+
+    Args:
+        data_dir: Directory containing city data files
+
+    Returns:
+        List of dictionaries with city name and country
+    """
+    cities = load_all_cities(data_dir)
+    return [{'name': city.name, 'country': city.country} for city in cities]

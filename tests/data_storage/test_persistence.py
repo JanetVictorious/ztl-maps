@@ -4,7 +4,13 @@ import json
 
 import pytest
 
-from src.data_storage.persistence import load_all_cities, load_city, save_all_cities, save_city
+from src.data_storage.persistence import (
+    get_all_cities,
+    load_all_cities,
+    load_city,
+    save_all_cities,
+    save_city,
+)
 from src.models.city import City
 from src.models.restriction import Restriction
 from src.models.zone import Zone
@@ -154,9 +160,9 @@ def test_load_nonexistent_file(tmp_path):
     """Test loading a file that doesn't exist."""
     nonexistent_file = tmp_path / 'nonexistent.json'
 
-    # Should raise FileNotFoundError
-    with pytest.raises(FileNotFoundError):
-        load_city(nonexistent_file)
+    # Now returns None instead of raising FileNotFoundError
+    result = load_city(nonexistent_file)
+    assert result is None
 
 
 def test_load_invalid_json(tmp_path):
@@ -166,6 +172,64 @@ def test_load_invalid_json(tmp_path):
     with open(invalid_file, 'w') as f:
         f.write('{invalid json')
 
-    # Should raise JSONDecodeError
-    with pytest.raises(json.JSONDecodeError):
-        load_city(invalid_file)
+    # Now returns None instead of raising JSONDecodeError
+    result = load_city(invalid_file)
+    assert result is None
+
+
+def test_load_city_by_name(sample_city, tmp_path):
+    """Test loading a city by name."""
+    # Set up a temporary data directory
+    data_dir = tmp_path / 'cities'
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save a city
+    filepath = data_dir / 'milano.json'
+    save_city(sample_city, filepath)
+
+    # Load the city by name
+    loaded_city = load_city('Milano', data_dir)
+
+    # Verify loaded city matches original
+    assert loaded_city is not None
+    assert loaded_city.name == 'Milano'
+    assert loaded_city.country == 'Italy'
+
+    # Try loading a nonexistent city
+    nonexistent_city = load_city('NonExistentCity', data_dir)
+    assert nonexistent_city is None
+
+
+def test_get_all_cities(tmp_path):
+    """Test getting a list of all available cities."""
+    # Create and save sample cities
+    data_dir = tmp_path / 'cities'
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create cities
+    milano = City(name='Milano', country='Italy')
+    roma = City(name='Roma', country='Italy')
+    paris = City(name='Paris', country='France')
+
+    # Save cities
+    save_city(milano, data_dir / 'milano.json')
+    save_city(roma, data_dir / 'roma.json')
+    save_city(paris, data_dir / 'paris.json')
+
+    # Get list of all cities
+    cities_list = get_all_cities(data_dir)
+
+    # Verify result
+    assert len(cities_list) == 3
+    assert {'name': 'Milano', 'country': 'Italy'} in cities_list
+    assert {'name': 'Roma', 'country': 'Italy'} in cities_list
+    assert {'name': 'Paris', 'country': 'France'} in cities_list
+
+    # Test with empty directory
+    empty_dir = tmp_path / 'empty'
+    empty_dir.mkdir(parents=True, exist_ok=True)
+    assert get_all_cities(empty_dir) == []
+
+    # Test with nonexistent directory
+    nonexistent_dir = tmp_path / 'nonexistent'
+    assert get_all_cities(nonexistent_dir) == []

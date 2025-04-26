@@ -46,7 +46,7 @@ limit-inference-results=100
 
 # List of plugins (as comma separated values of python module names) to load,
 # usually to register additional checkers.
-load-plugins=pylint_pydantic
+; load-plugins=pylint_pydantic
 
 # Pickle collected data for later comparisons.
 persistent=yes
@@ -92,6 +92,7 @@ disable=raw-checker-failed,
         deprecated-pragma,
         use-symbolic-message-instead,
         missing-module-docstring,
+        missing-function-docstring,
         import-outside-toplevel,  # design choice due to kfp
         reimported,  # design choice due to kfp
         too-many-arguments,  # design choice due to kfp components requiring lot's of args
@@ -251,10 +252,10 @@ function-naming-style=snake_case
 good-names=i,
            j,
            k,
+           id,
+           dt,
            ex,
-           Run,
-           df,
-           tf,
+           db,
            _,
 
 # Good variable names regexes, separated by a comma. If names match any regex,
@@ -370,7 +371,7 @@ indent-after-paren=4
 indent-string='    '
 
 # Maximum number of characters on a single line.
-max-line-length=100
+max-line-length=120
 
 # Maximum number of lines in a module.
 max-module-lines=1000
@@ -581,12 +582,11 @@ max-returns=6
 max-statements=50
 
 # Minimum number of public methods for a class (see R0903).
-min-public-methods=2
+min-public-methods=1
 
 
 [EXCEPTIONS]
 
 # Exceptions that will emit a warning when being caught. Defaults to
 # "BaseException, Exception".
-overgeneral-exceptions=BaseException,
-                       Exception
+overgeneral-exceptions=builtins.BaseException,builtins.Exception

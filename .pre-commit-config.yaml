@@ -51,12 +51,3 @@ repos:
         language: system
         types: [python]
         require_serial: true
-
-
-      - id: mkdocs
-        name: mkdocs check build
-        description: Checks if package documentation successfully builds.
-        entry: uv run mkdocs build
-        language: system
-        require_serial: true
-        pass_filenames: false

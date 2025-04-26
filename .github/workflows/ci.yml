@@ -1,0 +1,156 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, 'release/v*' ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        uv sync --group lint
+
+    - name: Pre-commit checks
+      uses: pre-commit/action@v3.0.1
+      with:
+        extra_args: --all-files --verbose
+
+  test:
+    name: test on ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+
+    - run: mkdir coverage
+
+    - name: Install dependencies
+      run: |
+        uv sync --group dev
+
+    - name: Run tests
+      run: |
+        uv run coverage run -m pytest
+      env:
+        COVERAGE_FILE: coverage/.coverage.${{ matrix.python-version }}
+
+    - name: store coverage files
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-${{ matrix.python-version }}
+        path: coverage
+        include-hidden-files: true
+
+  coverage:
+    needs: [test]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: get coverage files
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: coverage
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --group dev
+
+      - run: uv run coverage combine coverage
+
+      - run: uv run coverage report
+
+  check:
+    if: always()
+    needs: [lint, test, coverage]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
+
+  # # Build job for creating the package distributions
+  # release:
+  #   needs: [check]
+  #   if: success() && startsWith(github.ref, 'refs/tags/v')
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0  # Get full history for versioning
+
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12"
+
+  #     - uses: astral-sh/setup-uv@v5
+  #       with:
+  #         enable-cache: true
+
+  #     - run: uv build --all-packages
+
+  #     # - name: Publish to PyPI
+  #     #   uses: pypa/gh-action-pypi-publish@release/v1
+  #     #   with:
+  #     #     skip-existing: true
+
+  # Create GitHub release
+  github-release:
+    needs: [check]
+    if: success() && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write  # For creating releases
+      id-token: write  # For signing
+
+    steps:
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create
+          "$GITHUB_REF_NAME"
+          --repo "$GITHUB_REPOSITORY"
+          --title "Release $GITHUB_REF_NAME"
+          --generate-notes

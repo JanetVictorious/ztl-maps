@@ -65,6 +65,7 @@ ignore = ["D100", "D104"]
 "__init__.py" = ["F401"]
 "tests/scrapers/city_specific/test_milan_scraper.py" = ["E501"]
 "tests/scrapers/city_specific/test_florence_scraper.py" = ["E501"]
+"src/scripts/visualize_ztl_zones.py" = ["E501"]
 
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"

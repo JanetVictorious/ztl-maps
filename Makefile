@@ -1,6 +1,8 @@
 -include env.sh
 export
 
+.PHONY: help generate-lock-file sync-venv pre-commit-install pre-commit ruff run-tests run-tests-cov visualize-zones clean
+
 cur-dir := $(shell pwd)
 base-dir := $(shell basename $(cur-dir))
 
@@ -43,3 +45,19 @@ run-tests: ## Run tests
 
 run-tests-cov: ## Run tests with coverage
 	@uv run pytest -n auto --cov=src tests
+
+visualize-zones: ## Visualize zones
+	@uv run -m src.scripts.visualize_ztl_zones $(city)
+
+clean: ## Remove generated files like __pycache__, .coverage, etc.
+	@find . -type d -name "__pycache__" -exec rm -rf {} +
+	@find . -type f -name "*.pyc" -delete
+	@find . -type f -name "*.pyo" -delete
+	@find . -type f -name "*.pyd" -delete
+	@find . -type d -name "*.egg-info" -exec rm -rf {} +
+	@find . -type d -name "*.egg" -exec rm -rf {} +
+	@find . -type f -name ".coverage" -delete
+	@find . -type d -name "htmlcov" -exec rm -rf {} +
+	@find . -type d -name ".pytest_cache" -exec rm -rf {} +
+	@find . -type d -name ".ruff_cache" -exec rm -rf {} +
+	@rm -rf dist/ build/ .coverage

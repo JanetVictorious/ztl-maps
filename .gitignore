@@ -174,3 +174,4 @@ cython_debug/
 .vscode/
 *.kml
 visualizations/
+*_kml_coords_*.py

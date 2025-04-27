@@ -136,6 +136,83 @@ def test_parse_zones():
         assert len(zones[1].restrictions) == 1
 
 
+def test_create_hardcoded_zones():
+    """Test the creation of hardcoded zones."""
+    # Setup a scraper with a mocked coordinates dictionary
+    with patch('src.scrapers.city_specific.bologna.BolognaScraper._load_coordinates'):
+        scraper = BolognaScraper()
+
+        # Create a mock ztl_coordinates dictionary with test data
+        scraper.ztl_coordinates = {
+            '26': {
+                'name': 'ZTL Bologna 26',
+                'polygon': [[11.333, 44.501], [11.334, 44.502]],
+                'properties': {'id': '26', 'name': '01', 'state': 'A', 'street': 'VIA TEST'},
+            },
+            '43': {
+                'name': 'ZTL Bologna 43',
+                'polygon': [[11.343, 44.493], [11.344, 44.494]],
+                'properties': {'id': '43', 'name': '01', 'state': 'A'},
+            },
+            '47': {
+                'name': 'ZTL Bologna 47',
+                'polygon': [[11.347, 44.495], [11.348, 44.496]],
+                'properties': {'id': '47', 'name': '01', 'state': 'A'},
+            },
+            '99': {
+                'name': 'ZTL Bologna 99',
+                'polygon': [[11.350, 44.500], [11.351, 44.501]],
+                'properties': {'id': '99', 'name': '01', 'state': 'A', 'street': 'VIA TEST 2'},
+            },
+        }
+
+        # Call the method under test
+        zones = scraper._create_hardcoded_zones()
+
+        # Assertions
+        # 1. We should have zones for all entries in the coordinates dictionary
+        assert len(zones) == 4
+
+        # 2. The three main zones should be properly named
+        zone_names = [zone.name for zone in zones]
+        assert 'ZTL Centro Storico' in zone_names
+        assert 'ZTL Università' in zone_names
+        assert 'Zona T' in zone_names
+
+        # 3. The other zone should use the street name
+        assert 'ZTL Via Test 2' in zone_names
+
+        # 4. Verify Zona T has 24-hour restrictions
+        zona_t = next(zone for zone in zones if zone.name == 'Zona T')
+        assert zona_t.restrictions[0].start_time.hour == 0
+        assert zona_t.restrictions[0].end_time.hour == 23
+
+
+def test_parse_zones_fallback_to_hardcoded():
+    """Test that parse_zones falls back to hardcoded zones when website extraction fails."""
+    # Setup mock to return empty HTML content
+    with patch('src.scrapers.city_specific.bologna.BolognaScraper.get_html_content') as mock_get_html:
+        mock_get_html.return_value = '<html><body></body></html>'  # Empty HTML that would return no zones
+
+        # Also mock _create_hardcoded_zones to return known test data
+        with patch.object(BolognaScraper, '_create_hardcoded_zones') as mock_create_hardcoded:
+            # Create test zones
+            test_zone = Zone(id='bologna-test-zone', name='Test Zone', city='Bologna', boundaries=[[0, 0], [1, 1]])
+            mock_create_hardcoded.return_value = [test_zone]
+
+            # Create scraper and parse zones
+            scraper = BolognaScraper()
+            zones = scraper.parse_zones()
+
+            # Verify the fallback was used
+            assert len(zones) == 1
+            assert zones[0].id == 'bologna-test-zone'
+            assert zones[0].name == 'Test Zone'
+
+            # Verify the _create_hardcoded_zones method was called
+            mock_create_hardcoded.assert_called_once()
+
+
 def test_is_active_calculation():
     """Test that the parsed zones correctly calculate active times."""
     # Setup mock to return sample HTML
@@ -458,18 +535,47 @@ def test_alternative_real_website_format():
 
 
 def test_empty_article_content():
-    """Test behavior when no content is found."""
+    """Test behavior when no content is found - should fallback to hardcoded zones."""
     # Create HTML with no article content
     empty_html = '<html><body></body></html>'
 
     with patch('src.scrapers.city_specific.bologna.BolognaScraper.get_html_content') as mock_get_html:
         mock_get_html.return_value = empty_html
 
-        scraper = BolognaScraper()
-        zones = scraper.parse_zones()
+        # Create a scraper with a controlled set of coordinates
+        with patch.object(BolognaScraper, '_load_coordinates'):
+            scraper = BolognaScraper()
 
-        # Should return an empty list
-        assert zones == []
+            # Set up a minimal set of coordinates for the test
+            scraper.ztl_coordinates = {
+                '26': {
+                    'name': 'ZTL Bologna 26',
+                    'polygon': [[11.333, 44.501], [11.334, 44.502]],
+                    'properties': {'id': '26', 'name': '01', 'state': 'A'},
+                },
+                '43': {
+                    'name': 'ZTL Bologna 43',
+                    'polygon': [[11.343, 44.493], [11.344, 44.494]],
+                    'properties': {'id': '43', 'name': '01', 'state': 'A'},
+                },
+                '47': {
+                    'name': 'ZTL Bologna 47',
+                    'polygon': [[11.347, 44.495], [11.348, 44.496]],
+                    'properties': {'id': '47', 'name': '01', 'state': 'A'},
+                },
+            }
+
+            # Parse zones which should return the hardcoded zones
+            zones = scraper.parse_zones()
+
+            # Should return a non-empty list of zones using fallback
+            assert len(zones) > 0
+
+            # Should include the three main zones
+            zone_names = [zone.name for zone in zones]
+            assert 'ZTL Centro Storico' in zone_names
+            assert 'ZTL Università' in zone_names
+            assert 'Zona T' in zone_names
 
 
 def test_direct_extraction_code_paths():

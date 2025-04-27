@@ -50,7 +50,89 @@ class BolognaScraper(BaseScraper):
             return self._parse_test_format(ztl_info_sections)
 
         # If test format not found, try the real website format
-        return self._parse_real_website_format(soup)
+        zones = self._parse_real_website_format(soup)
+
+        # If no zones were parsed from the website, create hardcoded zones
+        if not zones:
+            zones = self._create_hardcoded_zones()
+
+        return zones
+
+    def _create_hardcoded_zones(self) -> list[Zone]:
+        """Create hardcoded zones for Bologna using all zones from the JSON file.
+
+        Returns:
+            list: List of Zone objects
+        """
+        zones = []
+
+        # First, add the three main zones we know about
+        main_zones = [
+            ('ZTL Centro Storico', '26', '7:00-20:00'),
+            ('ZTL Università', '47', '7:00-20:00'),
+            ('Zona T', '43', '24 hours'),
+        ]
+
+        for name, zone_id, time_range in main_zones:
+            zone_id_clean = zone_id.strip()
+            if zone_id_clean in self.ztl_coordinates:
+                # Create zone with proper ID and name
+                zone = Zone(
+                    id=f'bologna-{self._normalize_text(name.lower()).replace(" ", "-")}',
+                    name=name,
+                    city=self.city,
+                    boundaries=self._get_coordinates_for_zone(zone_id_clean),
+                )
+
+                # Add restrictions
+                restrictions = self._parse_restriction('All days', time_range)
+                for r in restrictions:
+                    zone.add_restriction(r)
+
+                zones.append(zone)
+
+        # Now add all other zones from the JSON file
+        known_ids = ['26', '43', '47']  # IDs we've already handled
+
+        for zone_id, zone_data in self.ztl_coordinates.items():
+            # Skip zones we've already added
+            if zone_id in known_ids:
+                continue
+
+            # Skip any non-numeric zone IDs (just in case)
+            if not zone_id.isdigit():
+                continue
+
+            # Get properties if available
+            properties = {}
+            if 'properties' in zone_data:
+                properties = zone_data['properties']
+
+            # Create a better name for the zone
+            if 'street' in properties:
+                street = properties['street'].title()
+                name = f'ZTL {street}'
+            else:
+                name = f'ZTL Bologna {zone_id}'
+
+            # Create a zone ID based on zone properties or ID
+            if 'street' in properties:
+                street = properties['street'].title()
+                unique_id = f'bologna-{zone_id}-{street.lower().replace(" ", "-").replace(".", "")}'
+            else:
+                unique_id = f'bologna-zone-{zone_id}'
+
+            # Create the zone
+            zone = Zone(id=unique_id, name=name, city=self.city, boundaries=zone_data['polygon'])
+
+            # Add default restrictions (7:00-20:00 all days)
+            restrictions = self._parse_restriction('All days', '7:00-20:00')
+            for r in restrictions:
+                zone.add_restriction(r)
+
+            zones.append(zone)
+
+        return zones
 
     def _parse_test_format(self, ztl_info_sections) -> list[Zone]:
         """Parse ZTL zones from the test HTML format.

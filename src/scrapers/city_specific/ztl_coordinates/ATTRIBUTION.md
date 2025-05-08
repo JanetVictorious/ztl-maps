@@ -14,6 +14,11 @@ The coordinate data files in this directory are sourced from municipal websites 
 - **License**: [Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/)
 - **Modifications**: Extracted from KML format and converted to JSON for use in this application
 
+### milan.json
+- **Source**: City of Milan municipal website
+- **License**: [Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/)
+- **Modifications**: Extracted from CSV format and converted to JSON for use in this application
+
 ## Usage Terms
 Under the CC BY 4.0 license, you are free to:
 - Share — copy and redistribute the material in any medium or format

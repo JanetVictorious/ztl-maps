@@ -172,6 +172,11 @@ cython_debug/
 
 # VSCode
 .vscode/
-*.kml
+
+# Cursor
+.cursor/
+
+# Misc
+ztl_kmz/
 visualizations/
-*_kml_coords_*.py
+parsers/

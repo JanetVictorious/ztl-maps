@@ -198,8 +198,14 @@ def test_is_active_calculation():
         }
         scraper.ztl_coordinates = sample_coordinates
 
-        # Mock hours data
-        sample_hours = {'ZTL Centro Antico': {'Monday-Friday': '07:00-19:00', 'Saturday-Sunday': '10:00-14:00'}}
+        # Mock hours data with the updated schedule
+        sample_hours = {
+            'ZTL Centro Antico': {
+                'Monday-Thursday': '09:00-22:00',
+                'Friday-Sunday': '09:00-23:59',
+                'Every day': '09:00-17:00',
+            }
+        }
 
         with patch.object(NaplesScraper, '_get_ztl_hours', return_value=sample_hours):
             zones = scraper.parse_zones()
@@ -207,21 +213,25 @@ def test_is_active_calculation():
             # Get the zone to test
             zone = zones[0]
 
-            # Wednesday at noon (should be active)
+            # Wednesday at noon (should be active - within "Every day" and "Monday-Thursday" windows)
             wednesday_noon = datetime(2023, 5, 10, 12, 0)
             assert zone.is_active_at(wednesday_noon) is True
 
-            # Saturday at noon (should be active)
+            # Saturday at noon (should be active - within "Every day" and "Friday-Sunday" windows)
             saturday_noon = datetime(2023, 5, 13, 12, 0)
             assert zone.is_active_at(saturday_noon) is True
 
-            # Saturday evening (should be inactive)
-            saturday_evening = datetime(2023, 5, 13, 18, 0)
-            assert zone.is_active_at(saturday_evening) is False
+            # Saturday at 20:00 (should be active - within "Friday-Sunday" window)
+            saturday_evening = datetime(2023, 5, 13, 20, 0)
+            assert zone.is_active_at(saturday_evening) is True
 
-            # Wednesday night (should be inactive)
-            wednesday_night = datetime(2023, 5, 10, 22, 0)
+            # Wednesday at 23:00 (should be inactive - outside all windows)
+            wednesday_night = datetime(2023, 5, 10, 23, 0)
             assert zone.is_active_at(wednesday_night) is False
+
+            # Every day early morning 7:00 (should be inactive - outside all windows)
+            early_morning = datetime(2023, 5, 10, 7, 0)
+            assert zone.is_active_at(early_morning) is False
 
 
 def test_parse_restriction():
@@ -330,8 +340,16 @@ def test_get_ztl_hours_with_no_html_data():
             assert 'ZTL Centro Antico' in hours
             assert 'ZTL Morelli - Filangieri - Mille' in hours
             assert 'ZTL Tarsia - Pignasecca - Dante' in hours
-            assert 'ZTL Belledonne, Martiri, Poerio' in hours
+            assert 'ZTL Belledonne - Martiri - Poerio' in hours
             assert 'ZTL Marechiaro' in hours
+
+            # Check that ZTL Centro Antico has the updated schedule
+            assert 'Monday-Thursday' in hours['ZTL Centro Antico']
+            assert 'Friday-Sunday' in hours['ZTL Centro Antico']
+            assert 'Every day' in hours['ZTL Centro Antico']
+            assert hours['ZTL Centro Antico']['Monday-Thursday'] == '09:00-22:00'
+            assert hours['ZTL Centro Antico']['Friday-Sunday'] == '09:00-23:59'
+            assert hours['ZTL Centro Antico']['Every day'] == '09:00-17:00'
 
 
 def test_expand_day_range():

@@ -139,21 +139,35 @@ class NaplesScraper(BaseScraper):
             if not hours:
                 # Default schedules for known ZTLs
                 default_hours = {
-                    'ZTL Centro Antico': {'Monday-Friday': '07:00-19:00', 'Saturday-Sunday': '10:00-14:00'},
-                    'ZTL Morelli - Filangieri - Mille': {'Monday-Friday': '08:00-18:00'},
-                    'ZTL Tarsia - Pignasecca - Dante': {'Monday-Friday': '09:00-17:00'},
-                    'ZTL Belledonne, Martiri, Poerio': {'Monday-Friday': '08:00-18:00'},
+                    'ZTL Centro Antico': {
+                        'Monday-Thursday': '09:00-22:00',
+                        'Friday-Sunday': '09:00-23:59',
+                        'Every day': '09:00-17:00',  # For Miroballo, Duomo, and Santa Sofia gates
+                    },
+                    'ZTL Morelli - Filangieri - Mille': {
+                        'Saturday-Sunday-Morning': '10:00-14:00',  # Dec 8 to Jan 6, holidays and pre-holidays
+                        'Saturday-Sunday-Evening': '16:00-20:00',  # Dec 8 to Jan 6, holidays and pre-holidays
+                    },
+                    'ZTL Tarsia - Pignasecca - Dante': {'Monday-Sunday': '09:00-18:00'},
+                    'ZTL Belledonne - Martiri - Poerio': {'Monday-Sunday': '19:00-07:00'},
                     'ZTL Marechiaro': {'Saturday-Sunday': '08:00-19:00'},
                 }
                 hours = default_hours
 
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             # If there's an error, provide default schedules
             hours = {
-                'ZTL Centro Antico': {'Monday-Friday': '07:00-19:00', 'Saturday-Sunday': '10:00-14:00'},
-                'ZTL Morelli - Filangieri - Mille': {'Monday-Friday': '08:00-18:00'},
-                'ZTL Tarsia - Pignasecca - Dante': {'Monday-Friday': '09:00-17:00'},
-                'ZTL Belledonne, Martiri, Poerio': {'Monday-Friday': '08:00-18:00'},
+                'ZTL Centro Antico': {
+                    'Monday-Thursday': '09:00-22:00',
+                    'Friday-Sunday': '09:00-23:59',
+                    'Every day': '09:00-17:00',  # For Miroballo, Duomo, and Santa Sofia gates
+                },
+                'ZTL Morelli - Filangieri - Mille': {
+                    'Saturday-Sunday-Morning': '10:00-14:00',  # Dec 8 to Jan 6, holidays and pre-holidays
+                    'Saturday-Sunday-Evening': '16:00-20:00',  # Dec 8 to Jan 6, holidays and pre-holidays
+                },
+                'ZTL Tarsia - Pignasecca - Dante': {'Monday-Sunday': '09:00-18:00'},
+                'ZTL Belledonne - Martiri - Poerio': {'Monday-Sunday': '19:00-07:00'},
                 'ZTL Marechiaro': {'Saturday-Sunday': '08:00-19:00'},
             }
 
@@ -180,7 +194,7 @@ class NaplesScraper(BaseScraper):
 
         return restrictions
 
-    def _expand_day_range(self, day_range: str) -> list[str]:
+    def _expand_day_range(self, day_range: str) -> list[str]:  # pylint: disable=too-many-return-statements
         """Expand a day range into a list of individual days.
 
         Args:
@@ -190,6 +204,20 @@ class NaplesScraper(BaseScraper):
             List of day names
         """
         day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+        # Handle special cases with time period suffixes (e.g., 'Saturday-Sunday-Morning')
+        if '-Morning' in day_range or '-Evening' in day_range:
+            base_range = day_range.split('-Morning')[0].split('-Evening')[0]
+            if '-' in base_range:
+                start_day, end_day = base_range.split('-')
+                try:
+                    start_index = day_order.index(start_day)
+                    end_index = day_order.index(end_day)
+                    return day_order[start_index : end_index + 1]
+                except ValueError:
+                    # Default to weekdays if days not recognized
+                    return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+            return [base_range]
 
         # Handle hyphenated ranges like "Monday-Friday"
         if '-' in day_range:
@@ -207,8 +235,12 @@ class NaplesScraper(BaseScraper):
             return day_order[start_index : end_index + 1]
 
         # Handle single day
-        elif day_range in day_order:
+        if day_range in day_order:
             return [day_range]
+
+        # Handle special case for "Every day" or "Monday-Sunday"
+        if day_range == 'Every day' or day_range == 'Monday-Sunday':
+            return day_order
 
         # Default to weekdays if format not recognized
         return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']

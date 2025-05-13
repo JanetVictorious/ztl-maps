@@ -970,7 +970,7 @@
     }
   },
   "3": {
-    "name": "ZTL Napoli - ZTL Belledonne, Martiri, Poerio",
+    "name": "ZTL Napoli - ZTL Belledonne - Martiri - Poerio",
     "id": "3",
     "center": [
       14.240334203739542,
@@ -1152,7 +1152,7 @@
     ],
     "properties": {
       "id": "3",
-      "name": "ZTL Belledonne, Martiri, Poerio",
+      "name": "ZTL Belledonne - Martiri - Poerio",
       "entity_class": 32.0,
       "entity_ins": 1023970.0,
       "atto": null,

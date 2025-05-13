@@ -44,11 +44,15 @@ map_with_active_zones.map.save("milano_active_zones.html")
 
 ## Data Attribution
 
-The ZTL coordinate data for Italian cities is sourced from their respective municipal websites under the CC BY 4.0 license:
+The ZTL coordinate data for Italian cities is sourced from their respective municipal websites under various licenses:
 
+### CC BY 4.0 Licensed Data:
 - **Florence**: Data provided by the City of Florence. Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - **Bologna**: Data provided by the City of Bologna. Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - **Milan**: Data provided by the City of Milan. Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+
+### IODL 2.0 Licensed Data:
+- **Naples**: Data provided by the City of Naples. Licensed under [IODL 2.0](https://www.dati.gov.it/iodl/2.0/)
 
 This project uses this data with modifications for visualization purposes.
 

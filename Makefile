@@ -1,26 +1,30 @@
 -include env.sh
 export
 
-.PHONY: help generate-lock-file sync-venv pre-commit-install pre-commit ruff run-tests run-tests-cov visualize-zones clean
-
 cur-dir := $(shell pwd)
 base-dir := $(shell basename $(cur-dir))
 
+.PHONY: help
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
+.PHONY: generate-lock-file
 generate-lock-file: ## Generate a uv.lock file from pyproject.toml
 	@uv lock
 
+.PHONY: sync-venv
 sync-venv: ## Sync local environment for Python development on pipelines
 	@uv sync --all-groups
 
+.PHONY: pre-commit-install
 pre-commit-install: ## Install pre-commit hooks
 	@uv run pre-commit install --install-hooks
 
+.PHONY: pre-commit
 pre-commit: ## Runs the pre-commit checks over entire repo
 	@uv run pre-commit run --all-files --color=always
 
+.PHONY: ruff
 ruff: ## Runs ruff linting and formatting
 	@if [ -n "$(path)" ]; then \
 		uv run ruff check --fix $(path) && \
@@ -36,6 +40,7 @@ ruff: ## Runs ruff linting and formatting
 # run-debug: ## Run application with debug mode enabled
 # 	@uv run -m src.main -d
 
+.PHONY: run-tests
 run-tests: ## Run tests
 	@if [ -n "$(path)" ]; then \
 		uv run coverage run -m pytest $(path); \
@@ -43,12 +48,15 @@ run-tests: ## Run tests
 		uv run coverage run -m pytest; \
 	fi
 
+.PHONY: run-tests-cov
 run-tests-cov: ## Run tests with coverage
 	@uv run pytest -n auto --cov=src tests
 
+.PHONY: visualize-zones
 visualize-zones: ## Visualize zones
 	@uv run -m src.scripts.visualize_ztl_zones $(city)
 
+.PHONY: clean
 clean: ## Remove generated files like __pycache__, .coverage, etc.
 	@find . -type d -name "__pycache__" -exec rm -rf {} +
 	@find . -type f -name "*.pyc" -delete

@@ -19,6 +19,11 @@ The coordinate data files in this directory are sourced from municipal websites 
 - **License**: [Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/)
 - **Modifications**: Extracted from CSV format and converted to JSON for use in this application
 
+### turin.json
+- **Source**: City of Turin municipal website
+- **License**: [Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/)
+- **Modifications**: Extracted from Shapefile format and converted to JSON for use in this application
+
 ## IODL 2.0 Licensed Data
 
 ### naples.json

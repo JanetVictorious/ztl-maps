@@ -13,6 +13,7 @@ The following datasets are used under the [Creative Commons Attribution 4.0 Inte
 - **Florence ZTL Coordinates**: Data provided by the City of Florence.
 - **Bologna ZTL Coordinates**: Data provided by the City of Bologna.
 - **Milan ZTL Coordinates**: Data provided by the City of Milan.
+- **Turin ZTL Coordinates**: Data provided by the City of Turin.
 
 These datasets are used with modifications for visualization purposes.
 

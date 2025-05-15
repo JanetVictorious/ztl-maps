@@ -50,6 +50,7 @@ The ZTL coordinate data for Italian cities is sourced from their respective muni
 - **Florence**: Data provided by the City of Florence. Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - **Bologna**: Data provided by the City of Bologna. Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - **Milan**: Data provided by the City of Milan. Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- **Turin**: Data provided by the City of Turin. Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
 ### IODL 2.0 Licensed Data:
 - **Naples**: Data provided by the City of Naples. Licensed under [IODL 2.0](https://www.dati.gov.it/iodl/2.0/)

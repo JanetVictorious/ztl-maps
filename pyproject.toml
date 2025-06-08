@@ -1,7 +1,7 @@
 [project]
 name = "ztl-maps"
 dynamic = ["version"]
-description = "Add your description here"
+description = "An App for visualizing ZTL zones in Italy"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

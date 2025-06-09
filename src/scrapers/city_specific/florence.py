@@ -23,7 +23,9 @@ class FlorenceScraper(BaseScraper):
 
     def _load_coordinates(self):
         """Load ZTL zone coordinates from JSON file."""
-        json_path = Path(__file__).parent / 'ztl_coordinates' / 'florence.json'
+        # Find the project root directory
+        project_root = Path(__file__).parent.parent.parent.parent
+        json_path = project_root / 'src' / 'data_storage' / 'cities' / 'florence.json'
         try:
             with open(json_path) as f:
                 self.ztl_coordinates = json.load(f)

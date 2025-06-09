@@ -42,8 +42,9 @@ ruff: .uv .pre-commit ## Runs ruff linting and formatting
 		uv run ruff format; \
 	fi
 
-# run: ## Run application
-# 	@uv run -m src.main
+.PHONY: run-app
+run-app: .uv .pre-commit ## Run application
+	@uv run fastapi dev src/api/endpoints.py
 
 # run-debug: ## Run application with debug mode enabled
 # 	@uv run -m src.main -d
